@@ -1,0 +1,337 @@
+﻿■ 共通問題3
+その他に自己アピールしたいことがあれば自由に書いてください。（たとえば、あなたが希望する講座を受講する上で、どのような技術力を持っているか、部活動、技術ブログ、GitHub、ソフトウェア開発、プログラミングコンテスト、勉強会での発表・運営などの実績や熱意があれば、あるだけ書いてください。）
+【以下に回答してください（行は適宜追加してください）】
+　作ったことがあるもの
+・MemorySearch (ワイルドカード対応 CUI exe）
+・HWBPを用いたAPI HOOK ツール(対象のソフトウェアのログ取りとかに使う DLL）
+・アンチデバッグツール(GetThreadContext検知やら例外ハンドラ検知,NtQueryInformationProcessを使った検知,Hookされやすい関数を自前で用意とか色々 DLL)
+・バイナリエディタ(バイナリの置き換え等 CUI exe)
+・辞書攻撃　ツール　WinHTTP利用(自前のサーバに脆弱なID PWを設定してどれくらいで突破できるかテスト CUI exe)
+
+上記5点すべてC,C++で作成
+
+　技術
+・API Hook
+・unpack(UPXとかthemida)
+・アンチデバッグの無効化(kernel系以外なら大体可)
+・難読化されたコードの動的解析(とにかく試行錯誤をして変更可能な箇所を特定、アンチデバッグの検知部分を特定)
+・自作関数の挿入(制御乗っ取り、変更）
+
+【回答ここまで】
+
+
+■選択問題2　（左側の□について、回答した問題は■にしてください）
+ある機械語をobjdumpにより逆アセンブルしたところ、以下の結果が得られました。このダンプに見られる問題点を指摘してください。
+
+---
+00000000 <.text>:
+   0:   b8 de 07 00 00       mov   $0x7de,%eax
+   5:   3d df 07 00 00       cmp   $0x7df,%eax
+   a:   75 06                jne   0x12
+   c:   89 c0                mov   %eax,%eax
+   e:   ff e3                jmp   *%ebx
+  10:   75 01                jne   0x13
+  12:   e9 5b ba 0e 00       jmp   0xeba72
+  17:   00 00                add   %al,(%eax)
+  19:   b9 00 00 00 00       mov   $0x0,%ecx
+  1e:   bb 01 00 00 00       mov   $0x1,%ebx
+  23:   b8 04 00 00 00       mov   $0x4,%eax
+  28:   cd 80                int   $0x80
+  2a:   b8 01 00 00 00       mov   $0x1,%eax
+  2f:   cd 80                int   $0x80
+---
+【以下に回答してください（行は適宜追加してください）】
+
+逆アセンブル結果がおかしくなっていると思います。
+objdumpを使ったことはないので、自分なりに考察していきます
+
+   0:   b8 de 07 00 00       mov   $0x7de,%eax
+   5:   3d df 07 00 00       cmp   $0x7df,%eax  ;zf = 0 cf = 1
+   a:   75 06                jne   0x12		;jmp 0x12
+   c:   89 c0                mov   %eax,%eax    
+   e:   ff e3                jmp   *%ebx        
+  10:   75 01                jne   0x13	        
+  12:   e9 5b ba 0e 00       jmp   0xeba72      ;0xeba72 jmp
+  17:   00 00                add   %al,(%eax)
+  19:   b9 00 00 00 00       mov   $0x0,%ecx    ;0
+  1e:   bb 01 00 00 00       mov   $0x1,%ebx    ;file descriptor stdout
+  23:   b8 04 00 00 00       mov   $0x4,%eax    
+  28:   cd 80                int   $0x80	;sys_write
+  2a:   b8 01 00 00 00       mov   $0x1,%eax    
+  2f:   cd 80                int   $0x80        ;sys_exit
+
+コメントを追加するとこんなかんじです
+
+0x5で常にzf=0なので
+0xaで常に0x12にjmpします
+0xcに無意味な命令があります。
+0x17 メモリーに書き込みされます。
+syscallでwriteが呼ばれてますがlengthが指定されてません
+
+0x10からjmpすると0x13以下の命令はこんな感じ
+　　　　 5b ba		      pop   %ebx	 
+      	 ba 0e 00 00 00       mov   $0xe,%edx    ;length 0xe
+    	 b9 00 00 00 00       mov   $0x0,%ecx    ;0x0
+    	 bb 01 00 00 00       mov   $0x1,%ebx    ;file descriptor stdout
+   	 b8 04 00 00 00       mov   $0x4,%eax    
+    	 cd 80                int   $0x80	 ;sys_write
+    	 b8 01 00 00 00       mov   $0x1,%eax    
+  	 cd 80                int   $0x80        ;sys_exit
+0xeba72以降の処理がないと仮定すると上の命令以外はジャンクになります。
+
+0xeba72の処理が必要な場合は以下の命令になります
+   0:    e9 6d ba 0e 00       jmp   0xeba72
+　　　　 5b ba		      pop   %ebx	 
+      	 ba 0e 00 00 00       mov   $0xe,%edx    ;length 0xe
+    	 b9 00 00 00 00       mov   $0x0,%ecx    ;0x0
+    	 bb 01 00 00 00       mov   $0x1,%ebx    ;file descriptor stdout
+   	 b8 04 00 00 00       mov   $0x4,%eax    
+    	 cd 80                int   $0x80	 ;sys_write
+    	 b8 01 00 00 00       mov   $0x1,%eax    
+  	 cd 80                int   $0x80        ;sys_exit
+
+と言った感じです。objdumpを使ったことがないので問題点がわからず考察してみました
+今回は文献を読んでません。
+【回答ここまで】
+
+
+
+
+■選択問題8　（左側の□について、回答した問題は■にしてください）
+gccが持つ-fno-stack-protectorは、どのようなセキュリティ機能を無効にするオプションであるのか、またこの機能により、どういった脆弱性からソフトウェアを守れるのかをそれぞれ記述してください。
+
+【以下に回答してください（行は適宜追加してください）】
+gcc触ったことがないので、調べた結果や予想を書きます。
+gcc の -fno-stack-protectorは関数のリターンアドレス付近のスタックの改ざんの検知を無効にするオプションです。
+
+セキュリティ機能がONの場合
+スタックオーバーフローを防げます。
+
+ebp退避領域と関数のリターンアドレスの前にカナリアと呼ばれる4バイトのワード(ランダム)が設置される。
+この生成したカナリアとスタック内のカナリアを比較し異なる場合は強制終了されます。
+
+スタックオーバーフロー検証：
+
+void error(){
+error();
+}
+int main(){
+error();
+}
+
+こんな感じのコードを書くとスタックオーバーフローを起こします。(VS等はエラーが出てコンパイルできません)
+実際適当なソフトにスタックオーバーフローを発生させると258631回目の関数の呼び出しで強制終了した。
+ollydbg等で処理を見てみるとespレジスタに大量のリターンアドレスが敷き詰められていた。
+
+適当なソフトウェアに挿入したアセンブリ
+
+0:  	xor eax,eax
+2:  	inc eax    //258631回目でエラー落ち
+3:	call 0x02
+8:		　 //リターン先
+
+ESPには0x8が大量にあった。
+
+				参考文献
+第10章 著名な脆弱性対策　バッファオーバーフロー: #5 運用環境における防御
+・http://www.ipa.go.jp/security/awareness/vendor/programmingv2/contents/c905.html
+(2015/06/20 アクセス可)
+【回答ここまで】
+
+
+
+■選択問題9　（左側の□について、回答した問題は■にしてください）
+以下のコードは、与えられたテキスト内からURLらしき文字列を探して、それらを<a>要素でリンクにしたHTMLを生成するJavaScriptの関数であるとします。攻撃者が引数 text の中身を自由に制御可能な場合、このコードにはどのような問題点があるか、またこのコードを修正するとすればどのようにすればよいか、自分なりに考察して書いてください。
+function makeUrlLinks( text ){
+ var html = text.replace( /[\w]+:\/\/[\w\.\-]+\/[^\r\n \t<>"']*/g, function( url ){
+   return "<a href=" + url + ">" + url + "</a>";
+   } );
+ document.getElementById( "output" ).innerHTML = html;
+}
+
+【以下に回答してください（行は適宜追加してください）】
+上記のコードのまま状態で文字列にjavascriptを埋め込まれると実行できてしまう。
+例えば textに'http://hoge/<iframe src="javascript:alert('XSS');"></iframe>'と言った内容が埋め込まれると
+htmlには
+
+<a href http://hoge/ > http://hoge/</a><iframe src="javascript:alert('XSS');"></iframe>
+
+となり<>"'といった特殊文字のエスケープがされてないのでjavascriptが実行されてしまう。
+なので対処法として、事前にtextをエスケープ処理する。
+
+function makeUrlLinks( text ){
+text = text.replace(/&/g, '&amp;')
+           .replace(/</g, '&lt;')
+           .replace(/>/g, '&gt;')
+           .replace(/"/g, '&#x022;')
+           .replace(/'/g, '&#x027;');
+ var html = text.replace( /[\w]+:\/\/[\w\.\-]+\/[^\r\n \t<>"']*/g, function( url ){
+   return "<a href=" + url + ">" + url + "</a>";
+   } );
+ document.getElementById( "output" ).innerHTML = html;
+}
+
+こんな感じでやります
+このコードで先ほどの処理を実行すると
+
+<a href http://hoge/ >&ltiframe src=&#x022;javascript:alert(&#x027;XSS&#x027;);&#x022;&gt&lt/iframe&gt
+
+ となりhtmlで視覚化できjavascriptが実行されません。
+これでhtml化に関しては即時攻撃コードが実行されないので問題ないと思います。
+その他urlの埋込み型に関しては中々対処が思いつかないので省略します。
+今回javascriptを触ったのは初めてですが、XSS等の存在を知っていたので調べることに関しては難はなかったと思います。
+
+			参考文献
+XSSパターン(暫定版)
+・http://nootropic.me/site/web/xss.html
+(2015/06/20 アクセス可)
+JavaScript：unescapeHTMLの妥当な実装
+・http://blog.tojiru.net/article/211339637.html
+(2015/06/20 アクセス可)
+色んなXSS
+・http://nootropic.me/blog/2015/02/16/%E8%89%B2%E3%82%93%E3%81%AAxss/
+(2015/06/20 アクセス可)
+JavaScriptでセキュアなコーディングをするために気をつけること
+・https://cybozudev.zendesk.com/hc/ja/articles/201850320-JavaScript%E3%81%A7%E3%82%BB%E3%82%AD%E3%83%A5%E3%82%A2%E3%81%AA%E3%82%B3%E3%83%BC%E3%83%87%E3%82%A3%E3%83%B3%E3%82%B0%E3%82%92%E3%81%99%E3%82%8B%E3%81%9F%E3%82%81%E3%81%AB%E6%B0%97%E3%82%92%E3%81%A4%E3%81%91%E3%82%8B%E3%81%93%E3%81%A8
+(2015/06/20 アクセス可)
+【回答ここまで】
+
+■選択問題10　（左側の□について、回答した問題は■にしてください）
+アンチデバッグ、難読化といった単語をキーワードとする技術について、あなたが知っていること、調べたことを具体的に記述してください。基本的にPCのソフトウェアにおける技術を想定していますが、他端末、またはハードウェアに関する内容でもかまいません。
+
+【以下に回答してください（行は適宜追加してください）】
+正直アンチデバッグはあまり効果があるものがわからないので
+実際に使用したものと回避方法を書きます。
+・IsDebuggerPresentの利用
+関数の戻り値が0であればデバッグされています。
+：回避方法 IsDebuggerPresentにブレークポイントを貼り1を戻り値にセットします。
+
+・NtQueryInformationProcessの利用
+GetProcAddressでアドレス取得して、
+ProcessInformationClassにProcessDebugPort（7）を設定
+関数の戻り値が0であればデバッグされています。
+：回避方法 IsDebuggerPresentにブレークポイントを貼り1を戻り値にセットします。
+
+・NtSetInformationThreadの利用
+GetProcAddressでアドレスを取得して、
+ThreadInformationClassにThreadHideFromDebugger(11)を設定
+もしデバッグされていればスレッドがデタッチされます。
+：回避方法 NtSetInformationThreadにブレークポイントを貼り
+先頭でeipにリターンアドレスを設定する。
+
+・プロセスを列挙してファイル名で検知
+CreateToolhelp32snapshotを使いプロセスを列挙して検知する。
+"ollydbg,exe"などがあれば処理を終了させる。
+回避方法:デバッガのファイル名の変更
+
+・EnumWindowsでウィンドウを列挙
+OLLYDBGなどがあれば処理を終了させる。
+などなど色々あります。
+：回避方法 EnumWindowsにブレークポイントを貼り0を戻り値にセットします。
+
+上記すべてollydbgのプラグインで回避できます(StrongODやOlly Advancedなどで)
+ソフトウェア中には、メインスレッドに検知処理を埋めず、別スレッドに任せるものもあります。
+こういうソフトウェアは検知スレッドをSuspendThread(Process HackerやProcess Explorerなどを使ったり)すれば検知されずに解析できます。
+
+・次に難読化に関して、実際に使用したものについて
+Junkcodeの挿入：
+コードをコンパイルする際に、defineで
+アセンブラのjunk codeを以下のように定義し　コードの合間に挿入します。
+
+#define JUNK_CODE_ONE        \
+    __asm{push eax}            \
+    __asm{xor eax, eax}        \
+    __asm{setpo al}            \
+    __asm{push edx}            \
+    __asm{xor edx, eax}        \
+    __asm{sal edx, 2}        \
+    __asm{xchg eax, edx}    \
+    __asm{pop edx}            \
+    __asm{or eax, ecx}        \
+    __asm{pop eax}
+
+An Anti-Reverse Engineering Guide  -  Junk Code
+・http://www.codeproject.com/Articles/30815/An-Anti-Reverse-Engineering-Guide
+(2015/06/22 アクセス可)
+
+Junkcodeは上記サイトより引用
+
+push eax 	;eaxをスタックに退避
+xor eax,eax	
+setpo al	
+push edx	;edxをスタックに退避
+xor eax ,eax
+sal edx,2
+xchg eax,edx
+pop edx		;eaxを取り出す
+or eax,ecx	
+pop eax		;edxを取り出す
+
+一度 eax edxをスタックに退避させ、レジスタを操作してます。
+その後スタックから取り出しているので結果的に、レジスタは特に操作されていないことになります。
+
+といったような処理をコードの合間に大量に設置し、アセンブラを読みにくくすることができます。
+また違和感がないように設置できるとjunkcodeが特定されないので、効果的です。
+
+例のjunkcodeのように色々なパターンのものを作成し、ランダムに設置することで難読化できます。
+欠点としては、サイズが大きくなることが挙げられます。
+
+【回答ここまで】
+
+
+
+■選択問題11　（左側の□について、回答した問題は■にしてください）
+下記バイナリを解析し、判明した情報を自由に記述してください
+------------------------------------------------
+D4 C3 B2 A1 02 00 04 00 00 00 00 00 00 00 00 00 
+00 00 04 00 01 00 00 00 88 EB 40 54 A2 BE 09 00 
+52 00 00 00 52 00 00 00 22 22 22 22 22 22 11 11 
+11 11 11 11 08 00 45 00 00 44 1A BD 40 00 80 06 
+3A 24 C0 A8 92 01 C0 A8 92 80 10 26 01 BB 86 14 
+7E 80 08 B3 C8 21 50 18 00 FC 0D 0E 00 00 18 03 
+03 00 17 01 0E FB 06 F6 CD A3 69 DC CA 0B 99 FF 
+1D 26 09 E1 52 8F 71 77 45 FA
+------------------------------------------------
+
+【以下に回答してください（行は適宜追加してください）】
+とりあえずwindowsでStirlingを使います。(他にバイナリエディタを知らないので）
+文字列でもないので特に情報が得られませんでした。
+何かのファイルである可能性があるので先頭バイナリをgoogle等で調べてみます
+するとD4 C3 B2 A1はpcapファイルを表すヘッダーであることが判明しました。
+とりあえず拡張子をpcapに変更して保存してみます。
+次にそれをwiresharkで読み込みます。
+成功しました。
+
+Source: 192.168.146.1	
+Source Port: 4134
+Destination: 192.168.146.128
+Destination: 443	
+Protocol: TLSv1.2	
+Length: 82	
+Info: Heartbeat Request
+
+Secure Sockets Layer
+Payload Length: 3835 
+Payload (4 bytes)
+
+こんな情報が得られました。
+このパケットを調べるどうやらheartbleedという脆弱性で攻撃してるように見受けられます。
+HeartBeat Massageのpayload lengthが3855と異様に長いです。
+payload 4 byte の超過分(3851byte)対象PCのメモリが見れます。
+この攻撃を受けると、通信内容や秘密鍵やその他重要情報が見られてしまう可能性があります。
+
+OpenSSLの脆弱性「Heartbleed」について
+・https://www.cybertrust.ne.jp/sureserver/productinfo/heartbleed.html
+(2015/06/21 アクセス可)
+File Signatures: Results Found For D4C3B2A1
+・http://www.filesignatures.net/index.php?page=search&search=D4C3B2A1&mode=SIG
+(2015/06/21 アクセス可)
+Libpcap File Format
+・https://wiki.wireshark.org/Development/LibpcapFileFormat
+(2015/06/21 アクセス可)
+【回答ここまで】
+
+
+
+
+以上
