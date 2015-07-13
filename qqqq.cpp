@@ -4,7 +4,7 @@
 #include <windows.h>
 #pragma warning(disable:4996)
 
-
+/*ƒRƒsƒy*/
 BOOL SetClipboardText(const char *Str)
 {
 	int    BufSize;
