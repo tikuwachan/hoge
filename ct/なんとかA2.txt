@@ -66,3 +66,10 @@ What's your name?
 Hi,
 FLAG_????????????????
 <---------------------------------------------------------------------->
+
+
+éQçl 
+
+http://inaz2.hatenablog.com/entry/2014/04/20/041453
+http://www.slideshare.net/icchyr/format-string-attack
+http://mrt-k.hateblo.jp/entry/2014/05/15/001337       #seccamp2015 @mrtc0
