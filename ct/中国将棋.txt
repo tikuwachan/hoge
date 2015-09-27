@@ -1,0 +1,58 @@
+Evod Chinese Chess
+
+なんか中国将棋らしい
+・CPUがめっちゃ思考する上に2回行動
+・こっちはコマとられると終わる
+・セクション見るとupxでパックされてるっぽい
+
+ということでアンパックするのも面倒なので動的解析だけでやりました。
+
+使用したツール-> CheatEngine
+
+解析手順 lose時にメッセージが出るのでここから追えば処理が分かる。(メッセージがまれにしか出ない?)
+MessageBoxIndirectAでブレークを貼ると引っかかったのでここから追っていく
+
+ChineseChess.EXE+2FAE - 74 17                 - je ChineseChess.EXE+2FC7
+ChineseChess.EXE+2FB0 - 68 1C714200           - push ChineseChess.EXE+2711C ->"You lose"
+ChineseChess.EXE+2FB5 - E8 B6100000           - call ChineseChess.EXE+4070  ->負けの処理をする関数
+ChineseChess.EXE+2FBA - 83 C4 04              - add esp,04
+ChineseChess.EXE+2FBD - 89 3D 44B14200        - mov [ChineseChess.EXE+2B144],edi
+ChineseChess.EXE+2FC3 - 5F                    - pop edi
+ChineseChess.EXE+2FC4 - 5E                    - pop esi
+ChineseChess.EXE+2FC5 - 5B                    - pop ebx
+ChineseChess.EXE+2FC6 - C3                    - ret 
+ChineseChess.EXE+2FC7 - 85 DB                 - test ebx,ebx
+
+この周辺の周辺のやけにアクセスしてるメモリとかにブレークポイントを貼って、周辺弄ってると
+
+ChineseChess.EXE+1570 - 53                    - push ebx
+ChineseChess.EXE+1571 - 55                    - push ebp
+ChineseChess.EXE+1572 - 56                    - push esi
+ChineseChess.EXE+1573 - 57                    - push edi
+ChineseChess.EXE+1574 - 8B 7C 24 14           - mov edi,[esp+14]
+ChineseChess.EXE+1578 - 8B F1                 - mov esi,ecx
+ChineseChess.EXE+157A - 57                    - push edi
+ChineseChess.EXE+157B - 8B AE 14090000        - mov ebp,[esi+00000914]
+ChineseChess.EXE+1581 - E8 1AFCFFFF           - call ChineseChess.EXE+11A0
+ChineseChess.EXE+1586 - 8B D8                 - mov ebx,eax
+ChineseChess.EXE+1588 - E8 23070000           - call ChineseChess.EXE+1CB0
+ChineseChess.EXE+158D - 85 C0                 - test eax,eax
+ChineseChess.EXE+158F - 74 12                 - je ChineseChess.EXE+15A3
+ChineseChess.EXE+1591 - 53                    - push ebx
+ChineseChess.EXE+1592 - 57                    - push edi
+ChineseChess.EXE+1593 - 8B CE                 - mov ecx,esi
+ChineseChess.EXE+1595 - E8 E6FDFFFF           - call ChineseChess.EXE+1380
+ChineseChess.EXE+159A - 5F                    - pop edi
+ChineseChess.EXE+159B - 5E                    - pop esi
+ChineseChess.EXE+159C - 5D                    - pop ebp
+ChineseChess.EXE+159D - 33 C0                 - xor eax,eax
+ChineseChess.EXE+159F - 5B                    - pop ebx
+ChineseChess.EXE+15A0 - C2 0400               - ret 0004
+
+この辺が怪しくて色々いじるとCPUが弱くなったので(1コマしか動かさなくなった）
+ChineseChess.EXE+158F :je->jmp
+これで動かすと相手の全コマ取れるので取るとフラグが出た。
+
+"key: W1NN1N9_TH3_1MP0551BL3_G4M3"
+
+TMCTF{W1NN1N9_TH3_1MP0551BL3_G4M3}
