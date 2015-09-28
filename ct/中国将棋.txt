@@ -1,20 +1,20 @@
 Evod Chinese Chess
 
-�Ȃ񂩒��������炵��
-�ECPU���߂�����v�l������2��s��
-�E�������̓R�}�Ƃ���ƏI���
-�E�Z�N�V���������upx�Ńp�b�N����Ă���ۂ�
+なんか中国将棋らしい
+・CPUがめっちゃ思考する上に2回行動
+・こっちはコマとられると終わる
+・セクション見るとupxでパックされてるっぽい
 
-�Ƃ������ƂŃA���p�b�N����̂��ʓ|�Ȃ̂œ��I��͂����ł��܂����B
+ということでアンパックするのも面倒なので動的解析だけでやりました。
 
-�g�p�����c�[��-> CheatEngine
+使用したツール-> CheatEngine
 
-��͎菇 lose���Ƀ��b�Z�[�W���o��̂ł�������ǂ��Ώ�����������B(���b�Z�[�W���܂�ɂ����o�Ȃ�?)
-MessageBoxIndirectA�Ńu���[�N��\��ƈ������������̂ł�������ǂ��Ă���
+解析手順 lose時にメッセージが出るのでここから追えば処理が分かる。(メッセージがまれにしか出ない?)
+MessageBoxIndirectAでブレークを貼ると引っかかったのでここから追っていく
 
 ChineseChess.EXE+2FAE - 74 17                 - je ChineseChess.EXE+2FC7
 ChineseChess.EXE+2FB0 - 68 1C714200           - push ChineseChess.EXE+2711C ->"You lose"
-ChineseChess.EXE+2FB5 - E8 B6100000           - call ChineseChess.EXE+4070  ->�����̏���������֐�
+ChineseChess.EXE+2FB5 - E8 B6100000           - call ChineseChess.EXE+4070  ->負けの処理をする関数
 ChineseChess.EXE+2FBA - 83 C4 04              - add esp,04
 ChineseChess.EXE+2FBD - 89 3D 44B14200        - mov [ChineseChess.EXE+2B144],edi
 ChineseChess.EXE+2FC3 - 5F                    - pop edi
@@ -23,7 +23,7 @@ ChineseChess.EXE+2FC5 - 5B                    - pop ebx
 ChineseChess.EXE+2FC6 - C3                    - ret 
 ChineseChess.EXE+2FC7 - 85 DB                 - test ebx,ebx
 
-���̎��ӂ̎��ӂ̂₯�ɃA�N�Z�X���Ă郁�����Ƃ��Ƀu���[�N�|�C���g��\���āA���ӘM���Ă��
+この周辺の周辺のやけにアクセスしてるメモリとかにブレークポイントを貼って、周辺弄ってると
 
 ChineseChess.EXE+1570 - 53                    - push ebx
 ChineseChess.EXE+1571 - 55                    - push ebp
@@ -49,9 +49,42 @@ ChineseChess.EXE+159D - 33 C0                 - xor eax,eax
 ChineseChess.EXE+159F - 5B                    - pop ebx
 ChineseChess.EXE+15A0 - C2 0400               - ret 0004
 
-���̕ӂ��������ĐF�X�������CPU���キ�Ȃ����̂�(1�R�}�����������Ȃ��Ȃ����j
-ChineseChess.EXE+158F :je->jmp
-����œ������Ƒ���̑S�R�}����̂Ŏ��ƃt���O���o���B
+------------------------------------------------------------------------------------------------------------
+
+ChineseChess.EXE+1CB0 - 83 EC 08              - sub esp,08
+ChineseChess.EXE+1CB3 - 53                    - push ebx
+ChineseChess.EXE+1CB4 - 55                    - push ebp
+ChineseChess.EXE+1CB5 - 8B E9                 - mov ebp,ecx
+ChineseChess.EXE+1CB7 - 56                    - push esi
+ChineseChess.EXE+1CB8 - BA 10000000           - mov edx,00000010
+ChineseChess.EXE+1CBD - 57                    - push edi
+ChineseChess.EXE+1CBE - 8B 45 00              - mov eax,[ebp+00]
+ChineseChess.EXE+1CC1 - 8D 34 C5 00000000     - lea esi,[eax*8+00000000]
+ChineseChess.EXE+1CC8 - 8D 0C C5 08000000     - lea ecx,[eax*8+00000008]
+ChineseChess.EXE+1CCF - 2B D6                 - sub edx,esi
+ChineseChess.EXE+1CD1 - 33 DB                 - xor ebx,ebx
+ChineseChess.EXE+1CD3 - 89 54 24 14           - mov [esp+14],edx
+ChineseChess.EXE+1CD7 - 89 5C 24 10           - mov [esp+10],ebx
+ChineseChess.EXE+1CDB - 33 D2                 - xor edx,edx
+ChineseChess.EXE+1CDD - 8A 54 2B 04           - mov dl,[ebx+ebp+04]
+ChineseChess.EXE+1CE1 - 3B D1                 - cmp edx,ecx
+ChineseChess.EXE+1CE3 - 74 17                 - je ChineseChess.EXE+1CFC
+ChineseChess.EXE+1CE5 - 43                    - inc ebx
+ChineseChess.EXE+1CE6 - 81 FB 00010000        - cmp ebx,00000100
+ChineseChess.EXE+1CEC - 7C ED                 - jnge ChineseChess.EXE+1CDB
+ChineseChess.EXE+1CEE - 5F                    - pop edi
+ChineseChess.EXE+1CEF - 5E                    - pop esi
+ChineseChess.EXE+1CF0 - 89 5C 24 08           - mov [esp+08],ebx
+ChineseChess.EXE+1CF4 - 5D                    - pop ebp
+ChineseChess.EXE+1CF5 - 33 C0                 - xor eax,eax
+ChineseChess.EXE+1CF7 - 5B                    - pop ebx
+ChineseChess.EXE+1CF8 - 83 C4 08              - add esp,08
+ChineseChess.EXE+1CFB - C3                    - ret 
+ChineseChess.EXE+1CFC - 8B 4C 24 14           - mov ecx,[esp+14]
+
+この辺が怪しくて色々いじるとCPUが弱くなったので(1コマしか動かさなくなった）
+ChineseChess.EXE+1CE3 :je->jmp
+これで動かすと相手の全コマ取れるので取るとフラグが出た。
 
 "key: W1NN1N9_TH3_1MP0551BL3_G4M3"
 
