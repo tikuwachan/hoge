@@ -51,39 +51,42 @@ ChineseChess.EXE+15A0 - C2 0400               - ret 0004
 
 ------------------------------------------------------------------------------------------------------------
 
-ChineseChess.EXE+1CB0 - 83 EC 08              - sub esp,08
-ChineseChess.EXE+1CB3 - 53                    - push ebx
-ChineseChess.EXE+1CB4 - 55                    - push ebp
-ChineseChess.EXE+1CB5 - 8B E9                 - mov ebp,ecx
-ChineseChess.EXE+1CB7 - 56                    - push esi
-ChineseChess.EXE+1CB8 - BA 10000000           - mov edx,00000010
-ChineseChess.EXE+1CBD - 57                    - push edi
-ChineseChess.EXE+1CBE - 8B 45 00              - mov eax,[ebp+00]
-ChineseChess.EXE+1CC1 - 8D 34 C5 00000000     - lea esi,[eax*8+00000000]
-ChineseChess.EXE+1CC8 - 8D 0C C5 08000000     - lea ecx,[eax*8+00000008]
-ChineseChess.EXE+1CCF - 2B D6                 - sub edx,esi
-ChineseChess.EXE+1CD1 - 33 DB                 - xor ebx,ebx
-ChineseChess.EXE+1CD3 - 89 54 24 14           - mov [esp+14],edx
-ChineseChess.EXE+1CD7 - 89 5C 24 10           - mov [esp+10],ebx
-ChineseChess.EXE+1CDB - 33 D2                 - xor edx,edx
-ChineseChess.EXE+1CDD - 8A 54 2B 04           - mov dl,[ebx+ebp+04]
-ChineseChess.EXE+1CE1 - 3B D1                 - cmp edx,ecx
-ChineseChess.EXE+1CE3 - 74 17                 - je ChineseChess.EXE+1CFC
-ChineseChess.EXE+1CE5 - 43                    - inc ebx
-ChineseChess.EXE+1CE6 - 81 FB 00010000        - cmp ebx,00000100
-ChineseChess.EXE+1CEC - 7C ED                 - jnge ChineseChess.EXE+1CDB
-ChineseChess.EXE+1CEE - 5F                    - pop edi
-ChineseChess.EXE+1CEF - 5E                    - pop esi
-ChineseChess.EXE+1CF0 - 89 5C 24 08           - mov [esp+08],ebx
-ChineseChess.EXE+1CF4 - 5D                    - pop ebp
-ChineseChess.EXE+1CF5 - 33 C0                 - xor eax,eax
-ChineseChess.EXE+1CF7 - 5B                    - pop ebx
-ChineseChess.EXE+1CF8 - 83 C4 08              - add esp,08
-ChineseChess.EXE+1CFB - C3                    - ret 
-ChineseChess.EXE+1CFC - 8B 4C 24 14           - mov ecx,[esp+14]
+ChineseChess.EXE+11A0 - 53                    - push ebx
+ChineseChess.EXE+11A1 - 55                    - push ebp
+ChineseChess.EXE+11A2 - 56                    - push esi
+ChineseChess.EXE+11A3 - 8B 74 24 10           - mov esi,[esp+10]
+ChineseChess.EXE+11A7 - 57                    - push edi
+ChineseChess.EXE+11A8 - 8B FE                 - mov edi,esi
+ChineseChess.EXE+11AA - C1 FE 08              - sar esi,08
+ChineseChess.EXE+11AD - 33 C0                 - xor eax,eax
+ChineseChess.EXE+11AF - 33 DB                 - xor ebx,ebx
+ChineseChess.EXE+11B1 - 8A 44 0E 04           - mov al,[esi+ecx+04]
+ChineseChess.EXE+11B5 - 81 E7 FF000000        - and edi,000000FF
+ChineseChess.EXE+11BB - 8B E8                 - mov ebp,eax
+ChineseChess.EXE+11BD - 3B EB                 - cmp ebp,ebx
+ChineseChess.EXE+11BF - 74 7E                 - je ChineseChess.EXE+123F
+ChineseChess.EXE+11C1 - 83 FD 10              - cmp ebp,10
+ChineseChess.EXE+11C4 - 88 5C 0E 04           - mov [esi+ecx+04],bl
+ChineseChess.EXE+11C8 - 7D 23                 - jnl ChineseChess.EXE+11ED
+ChineseChess.EXE+11CA - 8D 55 F8              - lea edx,[ebp-08]
+ChineseChess.EXE+11CD - C1 E2 08              - shl edx,08
+ChineseChess.EXE+11D0 - 8D 04 32              - lea eax,[edx+esi]
+ChineseChess.EXE+11D3 - 33 D2                 - xor edx,edx
+ChineseChess.EXE+11D5 - 8A 90 B0184200        - mov dl,[eax+ChineseChess.EXE+218B0]
+ChineseChess.EXE+11DB - 8D 04 40              - lea eax,[eax+eax*2]
+ChineseChess.EXE+11DE - 29 91 04010000        - sub [ecx+00000104],edx
+ChineseChess.EXE+11E4 - 8D 04 85 7CBC4801     - lea eax,[eax*4+ChineseChess.EXE+108BC7C]
+ChineseChess.EXE+11EB - EB 30                 - jmp ChineseChess.EXE+121D
+ChineseChess.EXE+11ED - 8D 55 F0              - lea edx,[ebp-10]
+ChineseChess.EXE+11F0 - 33 C0                 - xor eax,eax
+ChineseChess.EXE+11F2 - C1 E2 08              - shl edx,08
+ChineseChess.EXE+11F5 - 2B D6                 - sub edx,esi
+ChineseChess.EXE+11F7 - 8A 82 AE194200        - mov al,[edx+ChineseChess.EXE+219AE]
+ChineseChess.EXE+11FD - 8B 91 08010000        - mov edx,[ecx+00000108]
+
 
 この辺が怪しくて色々いじるとCPUが弱くなったので(1コマしか動かさなくなった）
-ChineseChess.EXE+1CE3 :je->jmp
+ChineseChess.EXE+11BF :je->jmp
 これで動かすと相手の全コマ取れるので取るとフラグが出た。
 
 "key: W1NN1N9_TH3_1MP0551BL3_G4M3"
