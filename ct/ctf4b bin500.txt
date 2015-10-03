@@ -1,2 +1,41 @@
-flag@‰·‚ß‚Ü‚·
+""""""""""""""""""""""""""""""""""flag.py"""""""""""""""""""""""""""""
+def calc(v):
+	v = v / 0x4d2
+	v = v ^ 0x7f
+	return chr(v)
+flag = "ctf4b{"
+flag += calc(0x12adc)
+flag += calc(0xec70)
+flag += calc(0xec63)
+flag += calc(0xf135)
+flag += calc(0x12b0E)
+flag += calc(0x0d928)
+flag += calc(0x10479)
+flag += calc(0x0d44E)
+flag += calc(0x0e78C)
+flag += calc(0xc100)
+flag += calc(0x12b04)
+flag += calc(0xd456)
+flag += calc(0xe78C)
+flag += calc(0xc100)
+flag += calc(0x12b04)
+flag += calc(0xd456)
+flag += calc(0x1094a)
+flag += calc(0x10483)
+flag += calc(0xec68)
+flag += calc(0x12b0d)
+flag += calc(0x1048a)
+flag += calc(0x11c9c)
+flag += calc(0x117cf)
+flag += "}"
+print flag
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+
+>flag.py
+ctf4b{ANNMARISOWASOWASHINAIDE}
+
+>bin500.exe
+FLAG CHECK:ctf4b{ANNMARISOWASOWASHINAIDE}
+CONGRATS.
+DONE.
